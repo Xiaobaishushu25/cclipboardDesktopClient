@@ -7,7 +7,6 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
-    CustomAlert: typeof import('./src/components/CustomAlert.vue')['default']
     DeviceInfoContainer: typeof import('./src/components/DeviceInfoContainer.vue')['default']
     ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
