@@ -115,7 +115,7 @@ impl Context {
                                     break;
                                 }
                                 Some(message) => {
-                                    println!("由tcp收到消息msg {:?}",message);
+                                    //info!("由tcp收到消息msg {:?}",message);
                                     self.handle_message(message).await;
                                 }
                             }
@@ -199,11 +199,14 @@ impl Context {
     async fn handle_message(&mut self, message: Message) {
         match message {
             ServerReadyResponseMessage(addr) => {
-                //服务器已准备好，发登录消息
-                self.remote_socket_addr = Some(addr);
                 DEVICE_INFO.get_or_init(||{
                     DeviceInfo::new(addr,whoami::devicename())
                 });
+                //info!("初始化设备信息完成{:?}",DEVICE_INFO.get());
+                self.remote_socket_addr = Some(addr);
+                // DEVICE_INFO.get_or_init(||{
+                //     DeviceInfo::new(addr,whoami::devicename())
+                // });
                 self.send_message_to_ui(ServerReadyResponseMessage(addr)).await;
                 // self.send_message(PairRequestMessage("104575".into(),DeviceInfo::new(self.remote_socket_addr.unwrap(),whoami::devicename()))).await;
                 // self.send_message(PairCreateMessage(DEVICE_INFO::new(whoami::devicename()))).await;

@@ -8,6 +8,7 @@ mod message;
 mod test;
 mod utils;
 
+use std::fs::File;
 use std::net::{ SocketAddr};
 use std::str::FromStr;
 use crate::clipboard::clipboard::ClipboardMonitor;
@@ -30,8 +31,9 @@ pub type Mtx = mpsc::Sender<Message>;
 pub struct MyState(Mtx, Btx, Mutex<bool>);
 #[tokio::main]
 async fn main() {
+    // log4rs::init_file("config/log4rs.yaml", Default::default()).unwrap();
     let (tx, ui_rx) = mpsc::channel::<Message>(32);
-    let (ui_tx, _) = broadcast::channel::<Message>(32);
+    let (ui_tx,_) = broadcast::channel::<Message>(32);
     let new_ui_tx = ui_tx.clone();
     // let mut input = String::new();
     // std::io::stdin().read_line(&mut input).expect("无法读取输入");
@@ -133,8 +135,8 @@ async fn main() {
             // set_window_shadow(&main_window);
             // we perform the initialization code on a new task so the app doesn't freeze
             tauri::async_runtime::spawn(async move {
-                let addr = "127.0.0.1:8888";
-                // let addr = "101.132.113.152:8888";
+                // let addr = "127.0.0.1:8888";
+                let addr = "101.132.113.152:8888";
                 // 连接到服务器
                 match TcpStream::connect(addr).await {
                     Ok(stream) => {
@@ -170,7 +172,7 @@ async fn main() {
 #[tauri::command]
 async fn exit_setting<'r>(can_tray:bool, state:State<'r, MyState>) -> Result<(), ()> {
     let mut x = state.2.lock().unwrap();
-    println!("进来设置要不要托盘{}",can_tray);
+    //info!("进来设置要不要托盘{}",can_tray);
     // let x = &mut state.2;
     *x = can_tray;
     Ok(())
@@ -197,10 +199,15 @@ async fn pair_create<'r>(state: State<'r, MyState>) -> Result<(), ()> {
 }
 #[tauri::command]
 fn get_self_info() -> Option<DeviceInfo> {
+    //info!("进来请求设备信息");
     // let option = DEVICE_INFO.get();
     // match option{
-    //     None => None,
+    //     None => {
+    //         //info!("设备信息是none");
+    //         None
+    //     },
     //     Some(info) => {
+    //         //info!("有设备信息");
     //         Some(info.clone())
     //     }
     // }
@@ -223,6 +230,7 @@ async fn start_listen<'r>(
     app_handle: tauri::AppHandle,
 ) -> Result<(), ()> {
     let mut rx = state.1.subscribe();
+    //info!("开始loop消息");
     loop {
         tokio::select! {
             message = rx.recv() => {
@@ -230,9 +238,11 @@ async fn start_listen<'r>(
                     Ok(msg) => {
                         match msg{
                             ServerReadyResponseMessage(_) => {
-                                // let info = DEVICE_INFO.get().unwrap().clone();
-                                // println!(" app_handle.emit_all(self_info)");
-                                // app_handle.emit_all("self_info",info).unwrap();
+                                // 本来是这个消息主动推给ui的，但是发现启动太快推消息的时候这边还没开始接受
+                                // 所以ui自己invoke吧+这里推送双重保障
+                                let info = DEVICE_INFO.get().unwrap().clone();
+                                //info!(" app_handle.emit_all(self_info)");
+                                app_handle.emit_all("self_info",info).unwrap();
                             }
                             PairDeviceInfosResponseMessage(mut devices) => {
                                 let self_info = DEVICE_INFO.get().unwrap();

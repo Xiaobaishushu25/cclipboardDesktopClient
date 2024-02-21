@@ -120,17 +120,39 @@ const serverError = ref(false);
 const autoStart = ref(JSON.parse(localStorage.getItem('auto-start')) || true)
 const pin = ref(JSON.parse(localStorage.getItem('pin')) || false)
 const canTray = ref(JSON.parse(localStorage.getItem('can-tray')) || true)
+let success = false
 onMounted(async ()=>{
   invoke('start_listen', {}).then()
+  //下面用了两个方法来获取设备信息，只要有一个能获取到就可以
   invoke('get_self_info', {}).then((data)=>{
-    if (data==null){
-      serverError.value = true
-    }else {
+    //这个有时会ui初始化太快后端还没准备好消息
+    if (data!=null&&!success){
       selfInfo.value = data
       openNotification("success","获取设备信息成功!")
+      success = true
+    }
+    // if (data==null){
+    //   // serverError.value = true
+    // }else {
+    //   selfInfo.value = data
+    //   openNotification("success","获取设备信息成功!")
+    // }
+  })
+  await listen('self_info',(event)=>{
+    //这个有时会后端初始化太快但是ui的轮询消息还没开始
+    if (!success){
+      console.log(`设备信息${event.payload}`)
+      selfInfo.value = event.payload
+      openNotification("success","获取设备信息成功!")
+      success = true
     }
   })
-
+  setTimeout(function() {
+    //如果五秒后还没有获取到设备信息则服务器异常
+    if (!success){
+      serverError.value = true
+    }
+  }, 5000);
   await appWindow.setAlwaysOnTop(pin.value)
   if (autoStart.value){
     await enable();
@@ -138,12 +160,6 @@ onMounted(async ()=>{
     await disable();
   }
   await invoke('exit_setting',{canTray:canTray.value})
-  // await listen('self_info',(event)=>{
-  //   console.log(`设备信息${event.payload}`)
-  //   selfInfo.value = event.payload
-  //   openNotification("success","获取设备信息成功!")
-  // })
-
   await listen('no_pair_device',()=>{
     console.log("收到no_pair_device")
     loading.value = false
