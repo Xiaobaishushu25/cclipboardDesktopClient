@@ -8,7 +8,6 @@ mod message;
 mod test;
 mod utils;
 
-use std::fs::File;
 use std::net::{ SocketAddr};
 use std::str::FromStr;
 use crate::clipboard::clipboard::ClipboardMonitor;
