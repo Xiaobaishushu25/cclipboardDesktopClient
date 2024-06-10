@@ -41,7 +41,8 @@ pub enum Message {
     HeartPackageMessage(),
     //六位随机数配对码
     //将自己设备信息和配对码发送给请求配对
-    PairRequestMessage(String,DeviceInfo),
+    // PairRequestMessage(String,DeviceInfo),
+    PairRequestMessage(String,DeviceInfo,bool),
     //将自己设备信息发送给请求服务器创建一个配对码
     PairCreateMessage(DeviceInfo),
     PairDeviceInfosResponseMessage(Vec<DeviceInfo>),
@@ -72,7 +73,7 @@ impl Message {
     pub fn get_tye_id(&self)->u8{
         match self {
             Message::HeartPackageMessage() =>{0}
-            Message::PairRequestMessage(_, _) => {1}
+            Message::PairRequestMessage(_,_, _) => {1}
             Message::PairCreateMessage(_) => {2}
             Message::PairDeviceInfosResponseMessage(_) => {3}
             Message::PairCodeResponseMessage(_) => {4}

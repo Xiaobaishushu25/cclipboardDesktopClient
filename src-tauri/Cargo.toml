@@ -1,6 +1,6 @@
 [package]
 name = "cclipboardclient"
-version = "0.0.0"
+version = "0.0.2"
 description = "cclipboard"
 authors = ["you"]
 license = ""

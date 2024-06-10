@@ -17,6 +17,7 @@ impl ClipboardMonitor{
 impl ClipboardHandler for ClipboardMonitor {
     fn on_clipboard_change(&mut self) -> CallbackResult {
         //这里要用阻塞发送的方式，因为不是异步函数
+        println!("剪切板发生变化");
         if let Err(e) = self.tx.blocking_send("clipboard change".into()){
             println!("err：在异步上下文中调用同步发送");
         }

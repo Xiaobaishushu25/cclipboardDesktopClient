@@ -6,7 +6,6 @@ mod clipboard;
 mod handler;
 mod message;
 mod test;
-mod utils;
 
 use std::net::{ SocketAddr};
 use std::str::FromStr;
@@ -179,10 +178,10 @@ async fn exit_setting<'r>(can_tray:bool, state:State<'r, MyState>) -> Result<(),
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 //https://tauri.app/v1/guides/features/command/
 #[tauri::command]
-async fn pair_request<'r>(code: String, state: State<'r, MyState>) -> Result<(), ()> {
+async fn pair_request<'r>(can_create:bool,code: String, state: State<'r, MyState>) -> Result<(), ()> {
     state
         .0
-        .send(PairRequestMessage(code, DEVICE_INFO.get().unwrap().clone()))
+        .send(PairRequestMessage(code, DEVICE_INFO.get().unwrap().clone(),can_create))
         .await
         .unwrap();
     Ok(())
@@ -229,7 +228,7 @@ async fn start_listen<'r>(
     app_handle: tauri::AppHandle,
 ) -> Result<(), ()> {
     let mut rx = state.1.subscribe();
-    //info!("开始loop消息");
+    println!("开始loop消息");
     loop {
         tokio::select! {
             message = rx.recv() => {

@@ -2,7 +2,7 @@ use crate::app_errors::AppError::{ErrorDescribe, IncompleteError};
 use crate::app_errors::AppResult;
 use crate::message::message::{DeviceInfo, Message};
 use crate::message::message::Message::{ClipboardMessage, DeviceChangeResponseMessage, HeartPackageMessage, NoPairDeviceResponseMessage, PairCodeResponseMessage, PairDeviceInfosResponseMessage, RemovePairResponseMessage, ServerReadyResponseMessage, WorkErrorMessage};
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BufMut, BytesMut};
 use std::io::Cursor;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -46,7 +46,7 @@ impl Context {
     }
     pub async fn start_work(&mut self,ui_tx:Btx,mut ui_rx:Receiver<Message>, mut clip_rx:Receiver<String>) {
         // 创建一个定时器，每隔45秒发送一次心跳
-        let mut heartbeat_interval = time::interval(Duration::from_secs(25));
+        let mut heartbeat_interval = time::interval(Duration::from_secs(45));
         // 用于保存心跳任务的句柄
         let mut heartbeat_task: Option<JoinHandle<_>> = None;
         let (tx, mut rx) = tokio::sync::mpsc::channel(20);
@@ -228,9 +228,11 @@ impl Context {
                 self.send_message_to_ui(message).await;
             }
             ClipboardMessage(content) => {
-                // println!("收到了消息ClipboardMessage{:?}", content);
+                println!("收到了消息ClipboardMessage{:?}", content);
                 if let Ok(text) = self.clipboard.get_text(){
+                    println!("当前剪切板内容{:?}",text);
                     if text!=content { //待同步内容和当前剪切板内容一样就不修改剪切板了
+                        println!("剪切板内容不一样，修改剪切板");
                         match self.clipboard.set_text(content){
                             Ok(_) => {}
                             Err(e) => {
@@ -241,6 +243,7 @@ impl Context {
                         }
                     }
                 }else {  //获取不到当前剪切板内容就不比较了，直接尝试设置
+                    println!("获取剪切板内容出错，尝试设置剪切板");
                     if let Err(e) = self.clipboard.set_text(content){
                         println!("设置剪切板出错：{}",e.to_string())
                     }
@@ -269,10 +272,15 @@ impl Context {
     }
     pub async fn send_message_to_ui(&mut self, message: Message) {
         println!("准备发送给前端{:?}",message);
-        self.ui_tx
+        //这里不直接unwrap()，有时前端还没开始监听，管道没有建立，直接发送会报错，我们不处理这个结果。
+        // self.ui_tx
+        //     .as_ref()
+        //     .unwrap()
+        //     .send(message)
+        //     .unwrap();
+        let _ = self.ui_tx
             .as_ref()
             .unwrap()
-            .send(message)
-            .unwrap();
+            .send(message);
     }
 }
